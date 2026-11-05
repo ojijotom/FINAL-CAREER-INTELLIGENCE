@@ -1,0 +1,205 @@
+/* Employer portal styles are scoped so they cannot interfere with student styles. */
+.employer-portal { min-height: 100vh; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #172033; background: #f5f7fb; }
+.employer-portal * { box-sizing: border-box; }
+.employer-portal button, .employer-portal input, .employer-portal textarea, .employer-portal select { font: inherit; }
+.employer-portal a { color: inherit; text-decoration: none; }
+.employer-portal .employer-app { min-height: 100vh; display: flex; }
+.employer-portal .employer-sidebar {
+  width: 265px; min-height: 100vh; position: fixed; left: 0; top: 0; bottom: 0;
+  display: flex; flex-direction: column; padding: 24px 16px;
+  background: #fff; border-right: 1px solid #e6eaf1; z-index: 10;
+}
+.employer-portal .employer-brand { display: flex; align-items: center; gap: 11px; padding: 6px 10px 25px; font-weight: 800; }
+.employer-portal .brand-mark, .employer-portal .company-avatar, .employer-portal .topbar-avatar, .employer-portal .large-company-avatar, .employer-portal .candidate-avatar, .employer-portal .large-candidate-avatar {
+  display: grid; place-items: center; background: #3158dc; color: #fff; font-weight: 800;
+}
+.employer-portal .brand-mark { width: 36px; height: 36px; border-radius: 11px; font-size: 13px; }
+.employer-portal .portal-label, .employer-portal .eyebrow, .employer-portal .topbar-kicker { color: #3158dc; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.employer-portal .portal-label { padding: 16px 12px 10px; }
+.employer-portal .employer-nav { display: flex; flex-direction: column; gap: 5px; }
+.employer-portal .employer-nav-link { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; color: #667085; font-size: 14px; font-weight: 600; }
+.employer-portal .employer-nav-link:hover { background: #f4f6fb; color: #172033; }
+.employer-portal .employer-nav-link.active { background: #eef2ff; color: #3158dc; }
+.employer-portal .nav-icon { width: 21px; text-align: center; font-size: 16px; }
+.employer-portal .sidebar-help { margin-top: auto; padding: 14px; display: flex; gap: 10px; background: #f7f8fc; border-radius: 12px; }
+.employer-portal .sidebar-help strong, .employer-portal .sidebar-help span, .employer-portal .employer-account strong, .employer-portal .employer-account span { display: block; }
+.employer-portal .sidebar-help strong { font-size: 12px; }
+.employer-portal .sidebar-help span, .employer-portal .employer-account span { margin-top: 3px; color: #8a93a5; font-size: 11px; }
+.employer-portal .help-icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #3158dc; }
+.employer-portal .employer-account { display: flex; gap: 10px; align-items: center; padding: 18px 8px 3px; }
+.employer-portal .company-avatar { width: 34px; height: 34px; border-radius: 9px; font-size: 11px; }
+.employer-portal .employer-account strong { font-size: 12px; }
+
+.employer-portal .employer-main { width: calc(100% - 265px); margin-left: 265px; }
+.employer-portal .employer-topbar { height: 72px; padding: 0 34px; background: #fff; border-bottom: 1px solid #e6eaf1; display: flex; align-items: center; justify-content: space-between; }
+.employer-portal .topbar-actions { display: flex; align-items: center; gap: 15px; }
+.employer-portal .icon-button { position: relative; border: 0; background: transparent; font-size: 20px; cursor: pointer; color: #5c6576; }
+.employer-portal .notification-dot { position: absolute; top: 1px; right: 1px; width: 6px; height: 6px; border-radius: 50%; background: #3158dc; }
+.employer-portal .view-public { font-size: 13px; color: #566074; }
+.employer-portal .topbar-avatar { width: 34px; height: 34px; border-radius: 50%; font-size: 11px; }
+.employer-portal .employer-content { padding: 34px; max-width: 1500px; margin: 0 auto; }
+.employer-portal .page { width: 100%; }
+.employer-portal .narrow-page { max-width: 1000px; }
+.employer-portal .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 27px; }
+.employer-portal .page-heading h1 { margin: 7px 0; font-size: 30px; line-height: 1.12; letter-spacing: -.03em; }
+.employer-portal .page-heading p { margin: 0; color: #7b8495; font-size: 14px; }
+.employer-portal .primary-button, .employer-portal .secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 9px; padding: 11px 16px; border: 1px solid transparent; cursor: pointer; font-weight: 700; font-size: 13px; }
+.employer-portal .primary-button { color: #fff; background: #3158dc; }
+.employer-portal .primary-button:hover { background: #284bc3; }
+.employer-portal .secondary-button { color: #3158dc; background: #fff; border-color: #dce2ed; }
+.employer-portal .back-link { display: inline-block; color: #3158dc; font-size: 13px; font-weight: 700; margin-bottom: 20px; }
+
+.employer-portal .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 18px; }
+.employer-portal .stat-card, .employer-portal .panel { background: #fff; border: 1px solid #e7eaf0; border-radius: 14px; }
+.employer-portal .stat-card { padding: 19px; }
+.employer-portal .stat-card-top { display: flex; justify-content: space-between; align-items: center; }
+.employer-portal .stat-icon { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: #eef2ff; color: #3158dc; }
+.employer-portal .stat-note { color: #2f9e69; font-size: 10px; font-weight: 700; }
+.employer-portal .stat-value { margin-top: 17px; font-size: 29px; font-weight: 800; letter-spacing: -.04em; }
+.employer-portal .stat-label { color: #7a8394; font-size: 12px; margin-top: 2px; }
+.employer-portal .dashboard-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; margin-bottom: 18px; }
+.employer-portal .panel { padding: 22px; }
+.employer-portal .panel-heading { display: flex; justify-content: space-between; gap: 15px; align-items: flex-start; margin-bottom: 18px; }
+.employer-portal .panel-heading h2, .employer-portal .panel h2 { margin: 0 0 5px; font-size: 17px; letter-spacing: -.02em; }
+.employer-portal .panel-heading p { margin: 0; color: #8a93a5; font-size: 12px; }
+.employer-portal .panel-heading a { color: #3158dc; font-size: 12px; font-weight: 700; }
+.employer-portal .job-list { display: flex; flex-direction: column; }
+.employer-portal .job-row { display: grid; grid-template-columns: 38px 1fr auto auto; gap: 12px; align-items: center; padding: 13px 0; border-top: 1px solid #eef0f4; }
+.employer-portal .job-symbol { width: 36px; height: 36px; display: grid; place-items: center; background: #f4f6fb; border-radius: 9px; color: #3158dc; }
+.employer-portal .job-main strong, .employer-portal .job-main span, .employer-portal .job-applications strong, .employer-portal .job-applications span { display: block; }
+.employer-portal .job-main strong { font-size: 13px; }
+.employer-portal .job-main span, .employer-portal .job-applications span { color: #8a93a5; font-size: 10px; margin-top: 3px; }
+.employer-portal .job-applications { text-align: right; }
+.employer-portal .job-applications strong { font-size: 13px; }
+.employer-portal .status { display: inline-flex; padding: 5px 9px; border-radius: 20px; font-size: 10px; font-weight: 800; }
+.employer-portal .active-status { color: #16764b; background: #e9f8f0; }
+.employer-portal .draft-status { color: #7b8495; background: #f0f2f5; }
+.employer-portal .snapshot { text-align: center; padding: 14px 10px 20px; }
+.employer-portal .snapshot-number { font-size: 48px; font-weight: 850; color: #3158dc; letter-spacing: -.06em; }
+.employer-portal .snapshot-title { margin-top: -2px; font-weight: 800; font-size: 14px; }
+.employer-portal .snapshot p { color: #8a93a5; font-size: 11px; line-height: 1.6; }
+.employer-portal .mini-metrics { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #eef0f4; padding-top: 16px; text-align: center; }
+.employer-portal .mini-metrics strong, .employer-portal .mini-metrics span { display: block; }
+.employer-portal .mini-metrics strong { font-size: 16px; }
+.employer-portal .mini-metrics span { margin-top: 3px; color: #8a93a5; font-size: 9px; }
+.employer-portal .candidate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
+.employer-portal .candidate-card { border: 1px solid #e9ecf2; border-radius: 12px; padding: 16px; transition: .15s ease; }
+.employer-portal .candidate-card:hover, .employer-portal .candidate-list-card:hover { border-color: #c7d2f7; box-shadow: 0 6px 20px rgba(31,46,85,.06); }
+.employer-portal .candidate-header { display: flex; align-items: center; gap: 10px; }
+.employer-portal .candidate-avatar { flex: 0 0 auto; width: 37px; height: 37px; border-radius: 50%; font-size: 10px; }
+.employer-portal .candidate-header strong, .employer-portal .candidate-header span { display: block; }
+.employer-portal .candidate-header strong { font-size: 12px; }
+.employer-portal .candidate-header span { color: #8a93a5; font-size: 10px; margin-top: 3px; }
+.employer-portal .match-score { margin-left: auto; font-weight: 800; color: #3158dc; font-size: 14px; }
+.employer-portal .match-label { color: #8a93a5; font-size: 9px; margin: 16px 0 5px; }
+.employer-portal .match-bar { height: 7px; border-radius: 20px; background: #edf0f5; overflow: hidden; }
+.employer-portal .match-bar span { display: block; height: 100%; border-radius: inherit; background: #3158dc; }
+.employer-portal .candidate-gap { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 9px; }
+.employer-portal .candidate-gap span { color: #8a93a5; }
+.employer-portal .candidate-gap strong { color: #4e5667; }
+
+.employer-portal .form-panel { padding: 26px; }
+.employer-portal .company-profile-header { display: flex; gap: 14px; align-items: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #edf0f4; }
+.employer-portal .large-company-avatar, .employer-portal .large-candidate-avatar { width: 60px; height: 60px; border-radius: 15px; }
+.employer-portal .company-profile-header h2 { margin: 0 0 4px; }
+.employer-portal .company-profile-header p { margin: 0; color: #8a93a5; font-size: 12px; }
+.employer-portal .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; margin-bottom: 18px; }
+.employer-portal label { display: flex; flex-direction: column; gap: 7px; color: #515a6c; font-size: 12px; font-weight: 700; }
+.employer-portal input, .employer-portal textarea, .employer-portal select { width: 100%; border: 1px solid #dfe4ec; border-radius: 9px; padding: 11px 12px; outline: none; color: #172033; background: #fff; font-size: 13px; font-weight: 400; }
+.employer-portal input:focus, .employer-portal textarea:focus, .employer-portal select:focus { border-color: #3158dc; box-shadow: 0 0 0 3px rgba(49,88,220,.08); }
+.employer-portal textarea { min-height: 130px; resize: vertical; }
+.employer-portal .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.employer-portal .success-message { margin-bottom: 17px; padding: 14px 16px; border: 1px solid #cceedd; border-radius: 10px; background: #effaf4; color: #16764b; }
+.employer-portal .success-message strong, .employer-portal .success-message span { display: block; }
+.employer-portal .success-message span { margin-top: 3px; font-size: 11px; }
+.employer-portal .ai-info { margin-top: 18px; padding: 14px; background: #f3f6ff; border-radius: 10px; border-left: 3px solid #3158dc; }
+.employer-portal .ai-info strong { font-size: 12px; color: #3158dc; }
+.employer-portal .ai-info p { margin: 5px 0 0; color: #657087; font-size: 11px; line-height: 1.5; }
+
+.employer-portal .table-wrap { overflow-x: auto; }
+.employer-portal table { width: 100%; border-collapse: collapse; min-width: 680px; }
+.employer-portal th, .employer-portal td { padding: 14px 10px; text-align: left; border-bottom: 1px solid #eef0f4; font-size: 12px; }
+.employer-portal th { color: #8a93a5; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.employer-portal .table-action { border: 1px solid #dfe4ec; background: #fff; border-radius: 7px; padding: 6px 9px; cursor: pointer; font-size: 10px; color: #3158dc; font-weight: 700; }
+.employer-portal .filter-bar { display: grid; grid-template-columns: 1.5fr .8fr .8fr; gap: 10px; margin-bottom: 16px; }
+.employer-portal .candidate-list { display: flex; flex-direction: column; gap: 10px; }
+.employer-portal .candidate-list-card { display: grid; grid-template-columns: 42px 1fr auto auto; gap: 14px; align-items: center; background: #fff; border: 1px solid #e7eaf0; border-radius: 12px; padding: 15px; }
+.employer-portal .candidate-details strong, .employer-portal .candidate-details span, .employer-portal .candidate-details small { display: block; }
+.employer-portal .candidate-details strong { font-size: 13px; }
+.employer-portal .candidate-details span { color: #687286; font-size: 11px; margin-top: 3px; }
+.employer-portal .candidate-details small { color: #8a93a5; font-size: 9px; margin-top: 6px; }
+.employer-portal .candidate-match { text-align: right; }
+.employer-portal .candidate-match strong, .employer-portal .candidate-match span { display: block; }
+.employer-portal .candidate-match strong { color: #3158dc; font-size: 18px; }
+.employer-portal .candidate-match span { color: #8a93a5; font-size: 9px; }
+.employer-portal .pipeline { display: flex; flex-direction: column; }
+.employer-portal .application-row { display: grid; grid-template-columns: 36px 1fr auto auto auto; gap: 13px; align-items: center; padding: 14px 0; border-bottom: 1px solid #eef0f4; }
+.employer-portal .candidate-avatar.small { width: 34px; height: 34px; }
+.employer-portal .application-main strong, .employer-portal .application-main span { display: block; }
+.employer-portal .application-main strong { font-size: 12px; }
+.employer-portal .application-main span { color: #8a93a5; font-size: 10px; margin-top: 3px; }
+.employer-portal .application-match { color: #3158dc; }
+.employer-portal .search-panel { margin-bottom: 17px; }
+.employer-portal .skill-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
+.employer-portal .skill-chips span { background: #eef2ff; color: #3158dc; border-radius: 20px; padding: 6px 10px; font-size: 10px; font-weight: 700; }
+.employer-portal .search-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.employer-portal .search-flow div { padding: 16px; background: #f7f8fb; border-radius: 10px; }
+.employer-portal .search-flow b { display: grid; place-items: center; width: 25px; height: 25px; background: #3158dc; color: #fff; border-radius: 50%; font-size: 10px; margin-bottom: 9px; }
+.employer-portal .search-flow span { color: #596378; font-size: 11px; line-height: 1.4; }
+.employer-portal .candidate-profile-hero { display: grid; grid-template-columns: 70px 1fr auto; gap: 18px; align-items: center; margin-bottom: 18px; }
+.employer-portal .candidate-profile-hero h1 { margin: 5px 0; font-size: 27px; }
+.employer-portal .candidate-profile-hero p { margin: 0; color: #7d8798; font-size: 12px; }
+.employer-portal .hero-match { text-align: right; }
+.employer-portal .hero-match strong, .employer-portal .hero-match span { display: block; }
+.employer-portal .hero-match strong { color: #3158dc; font-size: 29px; }
+.employer-portal .hero-match span { color: #8a93a5; font-size: 10px; }
+.employer-portal .profile-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; margin-bottom: 18px; }
+.employer-portal .skill-meter { margin-top: 17px; }
+.employer-portal .skill-meter > div:first-child { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; }
+.employer-portal .skill-meter strong { color: #3158dc; }
+.employer-portal .evidence-item { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid #eef0f4; }
+.employer-portal .evidence-item > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: #eef2ff; color: #3158dc; }
+.employer-portal .evidence-item strong, .employer-portal .evidence-item small { display: block; }
+.employer-portal .evidence-item strong { font-size: 12px; }
+.employer-portal .evidence-item small { color: #8a93a5; font-size: 9px; margin-top: 3px; }
+.employer-portal .explanation-panel p { color: #657087; font-size: 13px; line-height: 1.7; max-width: 850px; }
+.employer-portal .recommendation-box { margin-top: 17px; padding: 14px; background: #f4f6ff; border-radius: 9px; }
+.employer-portal .recommendation-box strong, .employer-portal .recommendation-box span { display: block; }
+.employer-portal .recommendation-box strong { color: #3158dc; font-size: 11px; }
+.employer-portal .recommendation-box span { color: #687286; font-size: 11px; margin-top: 4px; }
+.employer-portal .settings-list { padding: 0 22px; }
+.employer-portal .setting-row { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 20px 0; border-bottom: 1px solid #eef0f4; }
+.employer-portal .setting-row:last-child { border-bottom: 0; }
+.employer-portal .setting-row strong, .employer-portal .setting-row span { display: block; }
+.employer-portal .setting-row strong { font-size: 12px; }
+.employer-portal .setting-row span { color: #8a93a5; font-size: 10px; margin-top: 4px; }
+.employer-portal .setting-value { color: #3158dc !important; font-weight: 700; }
+.employer-portal .toggle { width: 42px; height: 24px; border: 0; border-radius: 20px; background: #dfe4ec; padding: 3px; cursor: pointer; }
+.employer-portal .toggle span { display: block; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: .15s; margin: 0; }
+.employer-portal .toggle.on { background: #3158dc; }
+.employer-portal .toggle.on span { transform: translateX(18px); }
+
+@media (max-width: 1050px) {
+  .employer-portal .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .employer-portal .candidate-grid { grid-template-columns: 1fr; }
+  .employer-portal .dashboard-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .employer-portal .employer-sidebar { width: 76px; padding: 16px 9px; }
+  .employer-portal .employer-brand span:last-child, .employer-portal .portal-label, .employer-portal .employer-nav-link span:last-child, .employer-portal .sidebar-help, .employer-portal .employer-account div:last-child { display: none; }
+  .employer-portal .employer-brand { justify-content: center; padding: 5px 0 20px; }
+  .employer-portal .employer-nav-link { justify-content: center; padding: 12px 8px; }
+  .employer-portal .employer-main { width: calc(100% - 76px); margin-left: 76px; }
+  .employer-portal .employer-content { padding: 22px 16px; }
+  .employer-portal .employer-topbar { padding: 0 17px; }
+  .employer-portal .stats-grid, .employer-portal .form-grid, .employer-portal .profile-grid, .employer-portal .search-flow { grid-template-columns: 1fr; }
+  .employer-portal .page-heading { align-items: flex-start; flex-direction: column; }
+  .employer-portal .candidate-list-card { grid-template-columns: 42px 1fr auto; }
+  .employer-portal .candidate-list-card .secondary-button { display: none; }
+}
+@media (max-width: 500px) {
+  .employer-portal .stats-grid { grid-template-columns: 1fr; }
+  .employer-portal .job-row { grid-template-columns: 36px 1fr auto; }
+  .employer-portal .job-applications, .employer-portal .job-row .status { display: none; }
+  .employer-portal .view-public { display: none; }
+}
