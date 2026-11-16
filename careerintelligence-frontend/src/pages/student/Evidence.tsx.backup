@@ -1,0 +1,226 @@
+﻿import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getStudentDocuments, type StudentDocument } from "../../api";
+import { useAuth } from "../../auth/AuthContext";
+
+const categories = [
+  {
+    type: "cv",
+    title: "CV / Resume",
+    description: "Upload your latest CV so the system can identify your education, experience, projects and skills.",
+    uploadPath: "/cv-upload",
+    uploadLabel: "Upload CV",
+    color: "blue",
+    icon: "CV",
+  },
+  {
+    type: "transcript",
+    title: "Academic Transcript",
+    description: "Upload your transcript so courses and academic performance can later be mapped to relevant skills.",
+    uploadPath: "/transcript-upload",
+    uploadLabel: "Upload Transcript",
+    color: "purple",
+    icon: "AC",
+  },
+  {
+    type: "certificate",
+    title: "Certificates",
+    description: "Professional certificates and training records provide additional evidence of your skills.",
+    color: "emerald",
+    icon: "CERT",
+  },
+  {
+    type: "other",
+    title: "Projects & Experience",
+    description: "Upload supporting documents for projects, internships and work experience.",
+    color: "orange",
+    icon: "WORK",
+  },
+] as const;
+
+export default function Evidence() {
+  const { accessToken } = useAuth();
+  const [documents, setDocuments] = useState<StudentDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!accessToken) {
+      setError("Your session has expired. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    getStudentDocuments(accessToken)
+      .then((result) => {
+        if (active) {
+          setDocuments(result);
+          setError("");
+        }
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setError(err instanceof Error ? err.message : "Could not load your documents.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
+
+  const uploadedCategories = categories.filter((category) =>
+    documents.some((document) => document.document_type === category.type),
+  ).length;
+
+  const progress = Math.round((uploadedCategories / categories.length) * 100);
+
+  const statusLabel = (document: StudentDocument) => {
+    if (document.review_status === "verified") return "Verified";
+    if (document.review_status === "reviewed") return "Reviewed";
+    if (document.review_status === "rejected") return "Rejected";
+    return "Uploaded — pending review";
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8">
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+            Student Profile
+          </p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-900">My Evidence</h1>
+          <p className="mt-2 max-w-2xl text-slate-600">
+            Upload and manage the academic, professional and project evidence
+            that helps Career Intelligence understand your skills.
+          </p>
+        </div>
+
+        <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-slate-900">Profile evidence</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Evidence categories with at least one uploaded document.
+              </p>
+            </div>
+            <span className="text-lg font-bold text-blue-600">{progress}%</span>
+          </div>
+
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-blue-600 transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <p className="mt-2 text-xs text-slate-500">
+            {uploadedCategories} of {categories.length} categories have documents.
+          </p>
+        </div>
+
+        {loading && (
+          <p className="mb-6 rounded-xl bg-blue-50 p-4 text-sm text-blue-700">
+            Loading your uploaded documents...
+          </p>
+        )}
+
+        {error && (
+          <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700" role="alert">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {categories.map((category) => {
+            const categoryDocuments = documents.filter(
+              (document) => document.document_type === category.type,
+            );
+
+            const uploaded = categoryDocuments.length > 0;
+
+            const iconColors = {
+              blue: "bg-blue-100 text-blue-700",
+              purple: "bg-purple-100 text-purple-700",
+              emerald: "bg-emerald-100 text-emerald-700",
+              orange: "bg-orange-100 text-orange-700",
+            };
+
+            return (
+              <div
+                key={category.type}
+                className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className={`flex h-12 min-w-12 items-center justify-center rounded-xl px-2 text-xs font-bold ${iconColors[category.color]}`}>
+                    {category.icon}
+                  </div>
+
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      uploaded
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {uploaded ? `${categoryDocuments.length} uploaded` : "Not uploaded"}
+                  </span>
+                </div>
+
+                <h2 className="text-xl font-bold text-slate-900">
+                  {category.title}
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {category.description}
+                </p>
+
+                {categoryDocuments.length > 0 && (
+                  <div className="mt-5 space-y-3">
+                    {categoryDocuments.map((document) => (
+                      <div key={document.id} className="rounded-xl bg-slate-50 p-3">
+                        <p className="break-all text-sm font-semibold text-slate-800">
+                          {document.original_filename}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {statusLabel(document)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Uploaded: {new Date(document.uploaded_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {"uploadPath" in category && (
+                  <Link
+                    to={category.uploadPath}
+                    className={`mt-5 inline-flex rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${
+                      category.color === "blue"
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-purple-600 hover:bg-purple-700"
+                    }`}
+                  >
+                    {category.uploadLabel}
+                  </Link>
+                )}
+
+                {!("uploadPath" in category) && (
+                  <p className="mt-5 text-xs text-slate-500">
+                    Document upload route will be added next.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,10 @@
+﻿.env
+.venv/
+myvenv/
+__pycache__/
+*.py[cod]
+private_media/
+staticfiles/
+*.log
+*.bak
+document-test-errors.txt

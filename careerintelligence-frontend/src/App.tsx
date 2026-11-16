@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+﻿import { Navigate, Route, Routes } from "react-router-dom";
 import AuthLayout from "./layouts/AuthLayout";
 import StudentLayout from "./layouts/StudentLayout";
 import EmployerLayout from "./layouts/EmployerLayout";
@@ -29,28 +29,12 @@ import CandidateProfile from "./pages/employer/CandidateProfile";
 import EmployerSettings from "./pages/employer/EmployerSettings";
 import Evidence from "./pages/student/Evidence";
 import CVUpload from "./pages/student/CVUpload";
+import CertificateUpload from "./pages/student/CertificateUpload";
 import TranscriptUpload from "./pages/student/TranscriptUpload";
 
 import UniversityDashboard from "./pages/university/Dashboard";
-import { useEffect, useState } from "react";
-import { api } from "./api";
 
 export default function App() {
-  const [status, setStatus] = useState("Connecting");
-
-  useEffect(() => {
-    api.getStatus()
-      .then(data => setStatus(data.message))
-      .catch(error => setStatus(error.message));
-  }, []);
-  
-  return (
-    <div>
-      <h1>Career Intelligence</h1>
-      <p>{status}</p>
-    </div>
-  );
-
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -69,6 +53,7 @@ export default function App() {
           <Route path="skills" element={<Skills />} />
            <Route path="evidence" element={<Evidence />} />
           <Route path="cv-upload" element={<CVUpload />} />
+          <Route path="certificate-upload" element={<CertificateUpload />} />
           <Route path="transcript-upload" element={<TranscriptUpload />} />
           <Route path="skill-gap" element={<SkillGap />} />
           <Route path="jobs" element={<Jobs />} />
@@ -105,6 +90,8 @@ export default function App() {
     </Routes>
   );
 }
+
+
 
 
 

@@ -1,0 +1,214 @@
+﻿import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getStudentDocuments, type StudentDocument } from "../../api";
+import { useAuth } from "../../auth/AuthContext";
+
+export default function Evidence() {
+  const { accessToken } = useAuth();
+  const [documents, setDocuments] = useState<StudentDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!accessToken) {
+      setError("Your session has expired. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
+    getStudentDocuments(accessToken)
+      .then(setDocuments)
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Could not load your documents.");
+      })
+      .finally(() => setLoading(false));
+  }, [accessToken]);
+
+  const hasDocument = (type: StudentDocument["document_type"]) =>
+    documents.some((document) => document.document_type === type);
+
+  const latestDocument = (type: StudentDocument["document_type"]) =>
+    documents
+      .filter((document) => document.document_type === type)
+      .sort(
+        (a, b) =>
+          new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime(),
+      )[0];
+
+  const requiredUploads = ["cv", "transcript"] as const;
+  const completedUploads = requiredUploads.filter((type) => hasDocument(type)).length;
+  const progress = Math.round((completedUploads / requiredUploads.length) * 100);
+
+  const statusLabel = (document?: StudentDocument) => {
+    if (!document) return "Not uploaded";
+    return document.review_status.charAt(0).toUpperCase() +
+      document.review_status.slice(1);
+  };
+
+  const statusStyle = (document?: StudentDocument) =>
+    document
+      ? "bg-emerald-100 text-emerald-700"
+      : "bg-amber-100 text-amber-700";
+
+  const EvidenceCard = ({
+    title,
+    description,
+    type,
+    href,
+    buttonText,
+    color,
+  }: {
+    title: string;
+    description: string;
+    type: StudentDocument["document_type"];
+    href: string;
+    buttonText: string;
+    color: string;
+  }) => {
+    const document = latestDocument(type);
+
+    return (
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div className="mb-4 flex items-start justify-between">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${color} text-2xl`}>
+            {type === "cv" ? "📄" : "🎓"}
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyle(document)}`}>
+            {statusLabel(document)}
+          </span>
+        </div>
+
+        <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+
+        {document && (
+          <div className="mt-4 rounded-xl bg-slate-50 p-3">
+            <p className="break-all text-sm font-semibold text-slate-800">
+              {document.original_filename}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Uploaded: {new Date(document.uploaded_at).toLocaleDateString()}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Extraction: {document.extraction_status}
+            </p>
+          </div>
+        )}
+
+        <Link
+          to={href}
+          className="mt-5 inline-flex rounded-xl px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+          style={{ backgroundColor: type === "cv" ? "#2563eb" : "#7c3aed" }}
+        >
+          {buttonText}
+        </Link>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8">
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+            Student Profile
+          </p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-900">
+            My Evidence
+          </h1>
+          <p className="mt-2 max-w-2xl text-slate-600">
+            Upload and manage the academic, professional and project evidence
+            that helps Career Intelligence understand your skills.
+          </p>
+        </div>
+
+        <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-900">Profile evidence</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {completedUploads} of 2 required document types uploaded.
+              </p>
+            </div>
+            <span className="text-lg font-bold text-blue-600">{progress}%</span>
+          </div>
+
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-blue-600 transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        {loading && (
+          <p className="mb-6 rounded-xl bg-blue-50 p-4 text-sm text-blue-700">
+            Loading your uploaded documents...
+          </p>
+        )}
+
+        {error && (
+          <p className="mb-6 rounded-xl bg-red-50 p-4 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
+
+        {!loading && !error && (
+          <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+            Your evidence list is connected to your student account.
+            {documents.length === 0
+              ? " You have not uploaded any documents yet."
+              : ` ${documents.length} document(s) found.`}
+          </div>
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <EvidenceCard
+            title="CV / Resume"
+            description="Upload your latest CV so the system can identify your education, experience, projects and skills."
+            type="cv"
+            href="/cv-upload"
+            buttonText="Upload CV"
+            color="bg-blue-100"
+          />
+
+          <EvidenceCard
+            title="Academic Transcript"
+            description="Upload your transcript so courses and academic performance can later be mapped to relevant skills."
+            type="transcript"
+            href="/transcript-upload"
+            buttonText="Upload Transcript"
+            color="bg-purple-100"
+          />
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-2xl">
+              🏅
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">Certificates</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Add professional certificates and training records that provide additional evidence of your skills.
+            </p>
+            <span className="mt-5 inline-flex rounded-xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-500">
+              Upload page not connected yet
+            </span>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-2xl">
+              💼
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">Projects & Experience</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Add projects, internships and work experience to provide practical evidence of your capabilities.
+            </p>
+            <span className="mt-5 inline-flex rounded-xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-500">
+              Upload page not connected yet
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

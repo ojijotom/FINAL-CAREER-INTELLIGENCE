@@ -1,9 +1,488 @@
+
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .auth_serializers import RegisterSerializer
+from .models import StudentProfile, Skill, StudentSkill
+from .serializers import (
+    StudentProfileSerializer,
+    SkillSerializer,
+    StudentSkillSerializer,
+)
+from .permissions import IsStudentRecordOwner
+import os
+import uuid
+import zipfile
+
+from pathlib import Path
+
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+from django.http import FileResponse
+from django.utils.text import get_valid_filename
+
+from rest_framework.parsers import MultiPartParser, FormParser
+
+from .models import StudentDocument
+from .serializers import StudentDocumentSerializer
 
 def api_status(request):
+    """Public backend health-check endpoint."""
     return JsonResponse({
         "project": "Career Intelligence",
         "message": "Backend is running successfully",
-        "status": "success"
+        "status": "success",
     })
 
+
+class RegisterView(APIView):
+    """Register a student, employer or university account."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.save()
+
+        refresh = RefreshToken.for_user(user)
+        profile = user.career_profile
+
+        return Response(
+            {
+                "message": "Account created successfully.",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": profile.role,
+                    "phone_number": profile.phone_number,
+                },
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CurrentUserView(APIView):
+    """Return details for the currently authenticated user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = getattr(user, "career_profile", None)
+
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": profile.role if profile else None,
+            "phone_number": profile.phone_number if profile else None,
+        })
+
+
+class StudentProfileView(APIView):
+    """Retrieve and update the authenticated student's own profile."""
+
+    permission_classes = [IsStudentRecordOwner]
+
+    def get_object(self):
+        student = get_object_or_404(
+            StudentProfile.objects.select_related(
+                "user_profile",
+                "university",
+            ),
+            user_profile__user=self.request.user,
+        )
+
+        self.check_object_permissions(self.request, student)
+        return student
+
+    def get(self, request):
+        student = self.get_object()
+        serializer = StudentProfileSerializer(student)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        student = self.get_object()
+
+        serializer = StudentProfileSerializer(
+            student,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "message": "Student profile updated successfully.",
+            "profile": serializer.data,
+        })
+
+
+class SkillCatalogueView(APIView):
+    """Return the shared catalogue of active skills."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        skills = Skill.objects.filter(
+            is_active=True
+        ).order_by("name")
+
+        serializer = SkillSerializer(skills, many=True)
+        return Response(serializer.data)
+
+
+class StudentSkillsView(APIView):
+    """List and add skills belonging to the authenticated student."""
+
+    permission_classes = [IsStudentRecordOwner]
+
+    def get_student(self):
+        return get_object_or_404(
+            StudentProfile,
+            user_profile__user=self.request.user,
+        )
+
+    def get(self, request):
+        student = self.get_student()
+
+        skills = StudentSkill.objects.filter(
+            student=student
+        ).select_related("skill").order_by("skill__name")
+
+        serializer = StudentSkillSerializer(skills, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        student = self.get_student()
+
+        serializer = StudentSkillSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        skill = serializer.validated_data["skill"]
+
+        if StudentSkill.objects.filter(
+            student=student,
+            skill=skill,
+        ).exists():
+            return Response(
+                {"skill": ["You have already added this skill."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        student_skill = serializer.save(student=student)
+
+        return Response(
+            {
+                "message": "Skill added successfully.",
+                "skill": StudentSkillSerializer(student_skill).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class StudentSkillDetailView(APIView):
+    """Update or delete one skill belonging to the authenticated student."""
+
+    permission_classes = [IsStudentRecordOwner]
+
+    def get_object(self, pk):
+        student_skill = get_object_or_404(
+            StudentSkill.objects.select_related("student", "skill"),
+            pk=pk,
+            student__user_profile__user=self.request.user,
+        )
+
+        self.check_object_permissions(self.request, student_skill)
+        return student_skill
+
+    def patch(self, request, pk):
+        student_skill = self.get_object(pk)
+
+        serializer = StudentSkillSerializer(
+            student_skill,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+
+        new_skill = serializer.validated_data.get(
+            "skill",
+            student_skill.skill,
+        )
+
+        duplicate_exists = StudentSkill.objects.filter(
+            student=student_skill.student,
+            skill=new_skill,
+        ).exclude(pk=student_skill.pk).exists()
+
+        if duplicate_exists:
+            return Response(
+                {"skill": ["You have already added this skill."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer.save()
+
+        return Response({
+            "message": "Skill updated successfully.",
+            "skill": serializer.data,
+        })
+
+    def delete(self, request, pk):
+        student_skill = self.get_object(pk)
+        student_skill.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# ============================================================
+# 7. STUDENT DOCUMENT MANAGEMENT
+# ============================================================
+
+MAX_DOCUMENT_SIZE = 5 * 1024 * 1024
+
+ALLOWED_DOCUMENT_TYPES = {
+    "application/pdf": {
+        "extension": ".pdf",
+        "signature": b"%PDF-",
+    },
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+        "extension": ".docx",
+        "signature": None,
+    },
+}
+
+
+def validate_student_document(uploaded_file):
+    """Validate document size, extension and actual file structure."""
+
+    if uploaded_file.size > MAX_DOCUMENT_SIZE:
+        raise ValueError("The maximum document size is 5 MB.")
+
+    if uploaded_file.size == 0:
+        raise ValueError("The uploaded document is empty.")
+
+    original_name = Path(uploaded_file.name).name
+    extension = Path(original_name).suffix.lower()
+
+    if extension not in (".pdf", ".docx"):
+        raise ValueError("Only PDF and DOCX documents are allowed.")
+
+    uploaded_file.seek(0)
+    file_start = uploaded_file.read(8)
+    uploaded_file.seek(0)
+
+    if extension == ".pdf":
+        if not file_start.startswith(b"%PDF-"):
+            raise ValueError("The uploaded file is not a valid PDF.")
+
+    elif extension == ".docx":
+        if not zipfile.is_zipfile(uploaded_file):
+            raise ValueError("The uploaded DOCX file is invalid.")
+
+        uploaded_file.seek(0)
+
+        try:
+            with zipfile.ZipFile(uploaded_file) as archive:
+                names = set(archive.namelist())
+
+                required_files = {
+                    "[Content_Types].xml",
+                    "word/document.xml",
+                }
+
+                if not required_files.issubset(names):
+                    raise ValueError("The uploaded DOCX structure is invalid.")
+
+        except zipfile.BadZipFile:
+            raise ValueError("The uploaded DOCX file is invalid.")
+
+    uploaded_file.seek(0)
+
+    return extension
+
+
+class StudentDocumentsView(APIView):
+    """List and upload documents belonging to the authenticated student."""
+
+    permission_classes = [IsStudentRecordOwner]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_student(self):
+        return get_object_or_404(
+            StudentProfile,
+            user_profile__user=self.request.user,
+        )
+
+    def get(self, request):
+        student = self.get_student()
+
+        documents = StudentDocument.objects.filter(
+            student=student
+        ).order_by("-uploaded_at")
+
+        serializer = StudentDocumentSerializer(
+            documents,
+            many=True,
+        )
+
+        return Response(serializer.data)
+
+    def post(self, request):
+        student = self.get_student()
+
+        uploaded_file = request.FILES.get("file")
+        document_type = request.data.get("document_type")
+
+        if uploaded_file is None:
+            return Response(
+                {"file": ["Please select a document to upload."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        allowed_types = [
+            choice[0]
+            for choice in StudentDocument.DocumentType.choices
+        ]
+
+        if document_type not in allowed_types:
+            return Response(
+                {"document_type": ["Select a valid document type."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            extension = validate_student_document(uploaded_file)
+        except ValueError as error:
+            return Response(
+                {"file": [str(error)]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        original_filename = get_valid_filename(
+            Path(uploaded_file.name).name
+        )[:255]
+
+        storage_directory = Path("student_documents") / str(student.pk)
+
+        storage = FileSystemStorage(
+            location=settings.MEDIA_ROOT,
+            base_url=None,
+        )
+
+        storage_key = (
+            storage_directory / f"{uuid.uuid4().hex}{extension}"
+        ).as_posix()
+
+        saved_name = None
+
+        try:
+            saved_name = storage.save(storage_key, uploaded_file)
+
+            document = StudentDocument.objects.create(
+                student=student,
+                document_type=document_type,
+                original_filename=original_filename,
+                storage_key=saved_name,
+                mime_type=(
+                    "application/pdf"
+                    if extension == ".pdf"
+                    else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                ),
+                size_bytes=uploaded_file.size,
+            )
+
+        except Exception:
+            if saved_name and storage.exists(saved_name):
+                storage.delete(saved_name)
+
+            raise
+
+        serializer = StudentDocumentSerializer(document)
+
+        return Response(
+            {
+                "message": "Document uploaded successfully.",
+                "document": serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+
+class StudentDocumentDetailView(APIView):
+    """Download or delete a document owned by the authenticated student."""
+
+    permission_classes = [IsStudentRecordOwner]
+
+    def get_object(self, pk):
+        document = get_object_or_404(
+            StudentDocument.objects.select_related("student"),
+            pk=pk,
+            student__user_profile__user=self.request.user,
+        )
+
+        self.check_object_permissions(self.request, document)
+
+        return document
+
+    def get(self, request, pk):
+        document = self.get_object(pk)
+
+        storage = FileSystemStorage(
+            location=settings.MEDIA_ROOT,
+            base_url=None,
+        )
+
+        if not storage.exists(document.storage_key):
+            return Response(
+                {"error": "The requested document file is missing."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        file_handle = storage.open(document.storage_key, "rb")
+
+        response = FileResponse(
+            file_handle,
+            as_attachment=True,
+            filename=document.original_filename,
+            content_type="application/octet-stream",
+        )
+
+        response["X-Content-Type-Options"] = "nosniff"
+        response["Cache-Control"] = "private, no-store"
+
+        return response
+
+    def delete(self, request, pk):
+        document = self.get_object(pk)
+
+        storage = FileSystemStorage(
+            location=settings.MEDIA_ROOT,
+            base_url=None,
+        )
+
+        storage.delete(document.storage_key)
+        document.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

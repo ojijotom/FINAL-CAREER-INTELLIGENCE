@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
+﻿import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, roleHome, type UserRole } from "../../auth/AuthContext";
+import { getCurrentUser, loginAccount } from "../../api";
 
 const roleLabels: Record<UserRole, string> = {
   student: "Student",
@@ -11,34 +12,53 @@ const roleLabels: Record<UserRole, string> = {
 export default function Login() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+    setLoading(true);
 
-    const saved = localStorage.getItem("career_intelligence_user");
-    const existing = saved ? JSON.parse(saved) as { email: string; role: UserRole; name: string; organisation?: string } : null;
+    try {
+      const tokens = await loginAccount(email.trim(), password);
+      const profile = await getCurrentUser(tokens.access);
 
-    // Prototype authentication. FastAPI will replace this later.
-    if (existing && existing.email.toLowerCase() === email.toLowerCase()) {
-      if (existing.role !== role) {
-        setError(`This account is registered as ${roleLabels[existing.role]}. Select the correct account type.`);
+      if (profile.role !== role) {
+        setError(
+          `This account is registered as ${roleLabels[profile.role]}. Select the correct account type.`,
+        );
         return;
       }
-      signIn(existing);
-      navigate(roleHome(existing.role), { replace: true });
-      return;
-    }
 
-    // Demo fallback so the UI can be tested before the backend exists.
-    const name = email.split("@")[0] || "Career Intelligence User";
-    const user = { name, email, role };
-    signIn(user);
-    navigate(roleHome(role), { replace: true });
+      const fullName =
+        `${profile.first_name} ${profile.last_name}`.trim() ||
+        profile.username;
+
+      const user = {
+        id: profile.id,
+        username: profile.username,
+        name: fullName,
+        email: profile.email,
+        role: profile.role,
+        phone_number: profile.phone_number,
+      };
+
+      signIn(user, tokens);
+      navigate(roleHome(profile.role), { replace: true });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Login failed. Please check your details and try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,19 +72,54 @@ export default function Login() {
       <form onSubmit={handleSubmit} className="form">
         <label>
           Account type
-          <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as UserRole)}
+          >
             <option value="student">Student</option>
             <option value="employer">Employer</option>
             <option value="university">University / Career Adviser</option>
           </select>
         </label>
-        <label>Email address<input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@example.com" required /></label>
-        <label>Password<input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" required /></label>
+
+        <label>
+          Email address or username
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Email or username"
+            autoComplete="username"
+            required
+          />
+        </label>
+
+        <label>
+          Password
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            required
+          />
+        </label>
+
         {error && <div className="auth-error">{error}</div>}
-        <button className="primary-button full" type="submit">Sign in</button>
+
+        <button
+          className="primary-button full"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
       </form>
 
-      <p className="auth-switch">Don't have an account? <Link to="/register">Create one</Link></p>
+      <p className="auth-switch">
+        Don't have an account? <Link to="/register">Create one</Link>
+      </p>
     </section>
   );
 }
