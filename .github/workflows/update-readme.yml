@@ -1,0 +1,68 @@
+
+name: Automatic README Update
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - README.md
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update README
+        run: |
+          python3 - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          readme = Path("README.md")
+
+          if not readme.exists():
+              readme.write_text("# My Project\n\n")
+
+          content = readme.read_text()
+
+          start = "<!-- AUTO-UPDATE-START -->"
+          end = "<!-- AUTO-UPDATE-END -->"
+
+          section = f"""<!-- AUTO-UPDATE-START -->
+          ## Project Automation
+
+          Last automated update: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+
+          This section is maintained automatically by GitHub Actions.
+          <!-- AUTO-UPDATE-END -->"""
+
+          if start in content and end in content:
+              before = content.split(start)[0]
+              after = content.split(end, 1)[1]
+              content = before + section + after
+          else:
+              content = content.rstrip() + "\n\n" + section + "\n"
+
+          readme.write_text(content)
+          PY
+
+      - name: Commit README changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || (
+            git commit -m "Automate README update"
+            git push
+          )
