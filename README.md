@@ -364,3 +364,11 @@ Unless a separate licence is provided in this repository, all rights are reserve
 <p align="center">
 <a href="https://github.com/ojijotom/FINAL-CAREER-INTELLIGENCE">🔗 Explore the Repository</a>
 </p>
+
+<!-- AUTO-UPDATE-START -->
+## Project Automation
+
+Last automated update: 2026-11-23 05:06 UTC
+
+This section is maintained automatically by GitHub Actions.
+<!-- AUTO-UPDATE-END -->
