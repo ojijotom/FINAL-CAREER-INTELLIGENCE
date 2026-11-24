@@ -1,0 +1,52 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python virtual environments
+venv/
+myvenv/
+env/
+.venv/
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+# Node.js and Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+
+# Local uploads and generated files
+uploads/
+*.sqlite3
+
+# Credentials and private keys
+*.pem
+*service-account*.json
+firebase-adminsdk*.json
+
+# Local backups
+backend-code-backups/
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+*.backup-*

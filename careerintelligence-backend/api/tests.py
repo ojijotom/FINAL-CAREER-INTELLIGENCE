@@ -1241,11 +1241,15 @@ class StudentDocumentEndpointTests(TestCase):
         )
 
         self.assertEqual(document.document_type, "cv")
-        self.assertEqual(document.extraction_status, "pending")
+        self.assertEqual(document.extraction_status, "failed")
         self.assertEqual(document.review_status, "pending")
+        self.assertEqual(document.extracted_data["text"], "")
+        self.assertIsNotNone(document.extracted_data["error"])
+
         self.assertTrue(
             (Path(settings.MEDIA_ROOT) / document.storage_key).is_file()
         )
+
 
     def test_student_can_upload_docx(self):
         self.authenticate_student()

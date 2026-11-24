@@ -1,4 +1,4 @@
-
+from intelligence_engine.document_extraction import extract_document
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Q
@@ -422,13 +422,64 @@ class StudentDocumentsView(APIView):
                 size_bytes=uploaded_file.size,
             )
 
+       
         except Exception:
             if saved_name and storage.exists(saved_name):
                 storage.delete(saved_name)
 
             raise
 
+        # Extract readable text from the saved document.
+        document.extraction_status = (
+            StudentDocument.ExtractionStatus.PROCESSING
+        )
+        document.save(update_fields=["extraction_status"])
+
+        try:
+            extraction = extract_document_text(
+                storage.path(saved_name)
+            )
+
+            document.extracted_data = {
+                "text": extraction["text"],
+                "pages": extraction["pages"],
+                "characters": extraction["characters"],
+                "error": extraction["error"],
+            }
+
+            document.extraction_status = (
+                StudentDocument.ExtractionStatus.COMPLETED
+                if extraction["success"]
+                else StudentDocument.ExtractionStatus.FAILED
+            )
+
+        except Exception:
+            document.extracted_data = {
+                "text": "",
+                "pages": 0,
+                "characters": 0,
+                "error": "Document extraction failed.",
+            }
+
+            document.extraction_status = (
+                StudentDocument.ExtractionStatus.FAILED
+            )
+
+        # Extracted information must always await student review.
+        document.review_status = (
+            StudentDocument.ReviewStatus.PENDING
+        )
+
+        document.save(
+            update_fields=[
+                "extracted_data",
+                "extraction_status",
+                "review_status",
+            ]
+        )
+
         serializer = StudentDocumentSerializer(document)
+
 
         return Response(
             {
