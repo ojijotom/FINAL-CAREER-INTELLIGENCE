@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import TypingText from "../components/TypingText";
 
 export default function LandingPage() {
   return (
@@ -9,8 +10,10 @@ export default function LandingPage() {
         <section className="hero">
           <div className="hero-copy">
             <span className="eyebrow">AI-BASED CAREER & SKILLS GAP ADVISER</span>
-            <h1>Turn your academic journey into a <span>career pathway.</span></h1>
-            <p>
+<h1>
+  Turn your academic journey into a{" "}
+  <TypingText />
+</h1>            <p>
               Understand your skills, discover suitable career paths, identify
               your gaps and get evidence-based development recommendations.
             </p>

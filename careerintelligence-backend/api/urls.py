@@ -74,4 +74,10 @@ urlpatterns = [
         StudentCareerGuidanceView.as_view(),
         name="student_career_guidance",
     ),
+        path(
+        "student/dashboard/",
+        views.StudentDashboardView.as_view(),
+        name="student_dashboard",
+    ),
 ]
+

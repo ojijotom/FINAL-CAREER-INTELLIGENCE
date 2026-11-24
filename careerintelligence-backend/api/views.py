@@ -1,6 +1,8 @@
 
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.db.models import Avg, Q
+from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -10,13 +12,21 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth_serializers import RegisterSerializer
-from .models import StudentProfile, Skill, StudentSkill
+from .models import (
+    StudentProfile,
+    Skill,
+    StudentSkill,
+    StudentDocument,
+    JobApplication,
+    Vacancy,
+    IntelligenceAnalysis,
+)
 from .serializers import (
     StudentProfileSerializer,
     SkillSerializer,
     StudentSkillSerializer,
 )
-from .permissions import IsStudentRecordOwner
+from .permissions import IsStudentRecordOwner, IsStudent
 import os
 import uuid
 import zipfile
@@ -486,3 +496,145 @@ class StudentDocumentDetailView(APIView):
         document.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StudentDashboardView(APIView):
+    """Return real dashboard information for the authenticated student."""
+
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        student = get_object_or_404(
+            StudentProfile.objects.select_related(
+                "user_profile__user",
+                "university",
+            ),
+            user_profile__user=request.user,
+        )
+
+        user = student.user_profile.user
+
+        # Student's actual skills
+        skills = StudentSkill.objects.filter(
+            student=student
+        ).select_related("skill").order_by("skill__name")
+
+        assessed_skills = skills.exclude(level__isnull=True)
+        average_level = assessed_skills.aggregate(
+            average=Avg("level")
+        )["average"]
+
+        # Student's actual documents
+        documents = StudentDocument.objects.filter(student=student)
+
+        # Student's actual job applications
+        applications = JobApplication.objects.filter(
+            student=student
+        ).select_related(
+            "vacancy",
+            "vacancy__employer",
+        ).order_by("-applied_at")
+
+        # Currently available vacancies
+        active_vacancies = Vacancy.objects.filter(
+            status=Vacancy.Status.ACTIVE
+        ).filter(
+            Q(closing_date__isnull=True)
+            | Q(closing_date__gte=timezone.localdate())
+        ).select_related(
+            "employer"
+        ).order_by("-created_at")
+
+        # Previously saved intelligence analyses
+        analyses = IntelligenceAnalysis.objects.filter(
+            student=student,
+            status=IntelligenceAnalysis.Status.COMPLETED,
+        ).select_related(
+            "career",
+            "vacancy",
+        ).order_by("-created_at")
+
+        return Response({
+            "student": {
+                "id": student.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "username": user.username,
+                "email": user.email,
+                "programme": student.programme,
+                "education_level": student.education_level,
+                "graduation_year": student.graduation_year,
+                "university": (
+                    student.university.institution_name
+                    if student.university else None
+                ),
+            },
+
+            "statistics": {
+                "skills_count": skills.count(),
+                "assessed_skills_count": assessed_skills.count(),
+                "average_skill_level": (
+                    round(float(average_level), 1)
+                    if average_level is not None else None
+                ),
+                "documents_count": documents.count(),
+                "verified_documents_count": documents.filter(
+                    review_status=StudentDocument.ReviewStatus.VERIFIED
+                ).count(),
+                "applications_count": applications.count(),
+                "active_vacancies_count": active_vacancies.count(),
+            },
+
+            "skills": [
+                {
+                    "id": item.id,
+                    "name": item.skill.name,
+                    "category": item.skill.category,
+                    "level": item.level,
+                    "verified": item.verified,
+                    "source": item.source,
+                    "evidence_description": item.evidence_description,
+                }
+                for item in skills
+            ],
+
+            "applications": [
+                {
+                    "id": item.id,
+                    "job_title": item.vacancy.title,
+                    "company": item.vacancy.employer.company_name,
+                    "status": item.status,
+                    "applied_at": item.applied_at.isoformat(),
+                }
+                for item in applications[:5]
+            ],
+
+            "vacancies": [
+                {
+                    "id": item.id,
+                    "title": item.title,
+                    "company": item.employer.company_name,
+                    "location": item.location,
+                    "employment_type": item.employment_type,
+                    "work_mode": item.work_mode,
+                    "closing_date": (
+                        item.closing_date.isoformat()
+                        if item.closing_date else None
+                    ),
+                }
+                for item in active_vacancies[:5]
+            ],
+
+            "career_analyses": [
+                {
+                    "id": item.id,
+                    "analysis_type": item.analysis_type,
+                    "career": (
+                        item.career.title if item.career else None
+                    ),
+                    "result": item.result,
+                    "created_at": item.created_at.isoformat(),
+                }
+                for item in analyses[:5]
+            ],
+        })

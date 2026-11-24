@@ -1,8 +1,24 @@
-import type { Skill } from "../types";
 import ProgressBar from "./ProgressBar";
 
-export default function SkillCard({ skill }: { skill: Skill }) {
-  const gap = Math.max(0, skill.target - skill.level);
+interface SkillCardData {
+  name: string;
+  level: number | null;
+  target?: number | null;
+  evidence: string;
+}
+
+export default function SkillCard({
+  skill,
+}: {
+  skill: SkillCardData;
+}) {
+  const hasLevel = skill.level !== null;
+  const hasTarget = skill.target !== null && skill.target !== undefined;
+
+  const gap =
+    hasLevel && hasTarget
+      ? Math.max(0, skill.target! - skill.level!)
+      : null;
 
   return (
     <article className="card">
@@ -11,12 +27,26 @@ export default function SkillCard({ skill }: { skill: Skill }) {
           <h3>{skill.name}</h3>
           <span className="muted">{skill.evidence}</span>
         </div>
-        <strong>{skill.level}%</strong>
+
+        <strong>
+          {hasLevel ? `${skill.level}%` : "Not assessed"}
+        </strong>
       </div>
-      <ProgressBar value={skill.level} />
+
+      <ProgressBar value={skill.level ?? 0} />
+
       <div className="skill-meta">
-        <span>Target: {skill.target}%</span>
-        <span>{gap > 0 ? `${gap}% gap` : "Target reached"}</span>
+        <span>
+          {hasTarget ? `Target: ${skill.target}%` : "Target not set"}
+        </span>
+
+        <span>
+          {gap === null
+            ? "Awaiting assessment"
+            : gap > 0
+              ? `${gap}% gap`
+              : "Target reached"}
+        </span>
       </div>
     </article>
   );
