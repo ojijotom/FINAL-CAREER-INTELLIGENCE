@@ -1,4 +1,4 @@
-﻿
+﻿from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
@@ -1249,6 +1249,94 @@ class StudentDocumentEndpointTests(TestCase):
         self.assertTrue(
             (Path(settings.MEDIA_ROOT) / document.storage_key).is_file()
         )
+
+    @patch("api.views.extract_document")
+    def test_cv_upload_automatically_saves_detected_skills(
+        self, mock_extract_document
+    ):
+        self.authenticate_student()
+
+        cv_text = (
+            "Developed applications using Python, Django, "
+            "JavaScript and React. Used Git for version control."
+        )
+
+        mock_extract_document.return_value = {
+            "text": cv_text,
+            "page_count": 1,
+            "character_count": len(cv_text),
+            "metadata": {},
+            "truncated": False,
+            "is_empty": False,
+            "requires_ocr": False,
+            "format": "pdf",
+        }
+
+        # Ensure the required skills exist in the catalogue.
+        skill_names = ["Python", "Django", "JavaScript", "React", "Git"]
+
+        for name in skill_names:
+            Skill.objects.get_or_create(
+                name=name,
+                defaults={
+                    "category": "Programming",
+                    "is_active": True,
+                },
+            )
+
+        response = self.client.post(
+            self.documents_url,
+            {
+                "document_type": "cv",
+                "file": self.make_pdf(),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        records = StudentSkill.objects.filter(
+            student=self.student,
+            skill__name__in=skill_names,
+        ).select_related("skill")
+
+        self.assertEqual(records.count(), 5)
+
+        for record in records:
+            self.assertEqual(
+                record.source,
+                StudentSkill.Source.CV_EXTRACTED,
+            )
+            self.assertIsNone(record.level)
+            self.assertFalse(record.verified)
+            self.assertTrue(record.evidence_description)
+
+        # Upload the same CV again: no duplicate skill records.
+        response = self.client.post(
+            self.documents_url,
+            {
+                "document_type": "cv",
+                "file": self.make_pdf("second_resume.pdf"),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            StudentSkill.objects.filter(
+                student=self.student,
+                skill__name__in=skill_names,
+            ).count(),
+            5,
+        )
+
 
 
     def test_student_can_upload_docx(self):

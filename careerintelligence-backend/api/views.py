@@ -1,3 +1,4 @@
+from intelligence_engine.skill_extraction import extract_skills
 from intelligence_engine.document_extraction import extract_document
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -429,6 +430,8 @@ class StudentDocumentsView(APIView):
 
             raise
 
+       
+       
         # Extract readable text from the saved document.
         document.extraction_status = (
             StudentDocument.ExtractionStatus.PROCESSING
@@ -436,29 +439,84 @@ class StudentDocumentsView(APIView):
         document.save(update_fields=["extraction_status"])
 
         try:
-            extraction = extract_document_text(
+            extraction = extract_document(
                 storage.path(saved_name)
             )
 
             document.extracted_data = {
                 "text": extraction["text"],
-                "pages": extraction["pages"],
-                "characters": extraction["characters"],
-                "error": extraction["error"],
+                "pages": extraction.get("page_count", 0),
+                "characters": extraction.get("character_count", 0),
+                "metadata": extraction.get("metadata", {}),
+                "truncated": extraction.get("truncated", False),
+                "is_empty": extraction.get("is_empty", False),
+                "requires_ocr": extraction.get("requires_ocr", False),
+                "format": extraction.get("format", ""),
+                "error": None,
             }
 
             document.extraction_status = (
                 StudentDocument.ExtractionStatus.COMPLETED
-                if extraction["success"]
-                else StudentDocument.ExtractionStatus.FAILED
             )
 
-        except Exception:
+            # Automatically detect skills from CVs and transcripts.
+            detected_skill_data = []
+
+            if document.document_type in ["cv", "transcript"]:
+                try:
+                    detected_skills = extract_skills(
+                        extraction.get("text", ""),
+                        Skill.objects.filter(is_active=True),
+                    )
+
+                    if document.document_type == "cv":
+                        skill_source = (
+                            StudentSkill.Source.CV_EXTRACTED
+                        )
+                    else:
+                        skill_source = (
+                            StudentSkill.Source.TRANSCRIPT_EXTRACTED
+                        )
+
+                    for item in detected_skills:
+                        skill = item["skill"]
+
+                        StudentSkill.objects.get_or_create(
+                            student=student,
+                            skill=skill,
+                            defaults={
+                                "level": None,
+                                "verified": False,
+                                "source": skill_source,
+                                "evidence_description": item["evidence"],
+                            },
+                        )
+
+                        detected_skill_data.append({
+                            "name": skill.name,
+                            "matched_alias": item["matched_alias"],
+                            "evidence": item["evidence"],
+                        })
+
+                    document.extracted_data["detected_skills"] = (
+                        detected_skill_data
+                    )
+
+                except Exception as skill_error:
+                    document.extracted_data["skill_extraction_error"] = (
+                        str(skill_error)
+                    )
+
+        except Exception as error:
             document.extracted_data = {
                 "text": "",
                 "pages": 0,
                 "characters": 0,
-                "error": "Document extraction failed.",
+                "metadata": {},
+                "truncated": False,
+                "is_empty": True,
+                "requires_ocr": False,
+                "error": str(error),
             }
 
             document.extraction_status = (

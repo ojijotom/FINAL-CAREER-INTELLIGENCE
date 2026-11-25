@@ -230,3 +230,71 @@ export function uploadStudentDocument(
     },
   );
 }
+
+export interface StudentDashboardSkill {
+  id: number;
+  name: string;
+  category: string;
+  level: number | null;
+  verified: boolean;
+  source: string;
+  evidence_description: string;
+}
+
+export interface StudentDashboardData {
+  student: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    username: string;
+    email: string;
+    programme: string;
+    education_level: string;
+    graduation_year: number | null;
+    university: string | null;
+  };
+  statistics: {
+    skills_count: number;
+    assessed_skills_count: number;
+    average_skill_level: number | null;
+    documents_count: number;
+    verified_documents_count: number;
+    applications_count: number;
+    active_vacancies_count: number;
+  };
+  skills: StudentDashboardSkill[];
+  applications: {
+    id: number;
+    job_title: string;
+    company: string;
+    status: string;
+    applied_at: string;
+  }[];
+  vacancies: {
+    id: number;
+    title: string;
+    company: string;
+    location: string;
+    employment_type: string;
+    work_mode: string;
+    closing_date: string | null;
+  }[];
+  career_analyses: {
+    id: number;
+    analysis_type: string;
+    career: string | null;
+    result: Record<string, unknown>;
+    created_at: string;
+  }[];
+}
+
+export function getStudentDashboard(
+  accessToken: string,
+): Promise<StudentDashboardData> {
+  return request<StudentDashboardData>("student/dashboard/", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
