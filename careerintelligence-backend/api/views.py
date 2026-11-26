@@ -26,6 +26,7 @@ from .serializers import (
     StudentProfileSerializer,
     SkillSerializer,
     StudentSkillSerializer,
+    VacancySerializer,
 )
 from .permissions import IsStudentRecordOwner, IsStudent
 import os
@@ -606,7 +607,30 @@ class StudentDocumentDetailView(APIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class StudentVacanciesView(APIView):
+    """Return currently available vacancies for authenticated students."""
 
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        vacancies = Vacancy.objects.filter(
+            status=Vacancy.Status.ACTIVE
+        ).filter(
+            Q(closing_date__isnull=True)
+            | Q(closing_date__gte=timezone.localdate())
+        ).select_related(
+            "employer"
+        ).prefetch_related(
+            "skill_requirements__skill"
+        ).order_by("-created_at")
+
+        serializer = VacancySerializer(
+            vacancies,
+            many=True,
+        )
+
+        return Response(serializer.data)
+    
 class StudentDashboardView(APIView):
     """Return real dashboard information for the authenticated student."""
 

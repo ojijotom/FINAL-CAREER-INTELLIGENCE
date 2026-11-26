@@ -9,6 +9,8 @@ from .models import (
     CareerSkillRequirement,
     UniversityProfile,
     StudentDocument,
+    Vacancy,
+    VacancySkill,
 )
 
 
@@ -50,12 +52,15 @@ class SkillSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-
 class StudentSkillSerializer(serializers.ModelSerializer):
-    """Serialize skills reported by a student."""
+    skill_name = serializers.CharField(
+        source="skill.name",
+        read_only=True,
+    )
 
-    skill = serializers.PrimaryKeyRelatedField(
-        queryset=Skill.objects.filter(is_active=True)
+    skill_category = serializers.CharField(
+        source="skill.category",
+        read_only=True,
     )
 
     class Meta:
@@ -63,6 +68,8 @@ class StudentSkillSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "skill",
+            "skill_name",
+            "skill_category",
             "level",
             "verified",
             "source",
@@ -72,12 +79,13 @@ class StudentSkillSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "skill_name",
+            "skill_category",
             "verified",
             "source",
             "created_at",
             "updated_at",
         ]
-
 
 class CareerSkillRequirementSerializer(serializers.ModelSerializer):
     """Expose the skill requirements associated with a career."""
@@ -119,6 +127,66 @@ class CareerSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+class VacancySkillSerializer(serializers.ModelSerializer):
+    """Expose the skills required by a job vacancy."""
+
+    skill_name = serializers.CharField(
+        source="skill.name",
+        read_only=True,
+    )
+    skill_category = serializers.CharField(
+        source="skill.category",
+        read_only=True,
+    )
+
+    class Meta:
+        model = VacancySkill
+        fields = [
+            "id",
+            "skill",
+            "skill_name",
+            "skill_category",
+            "requirement_type",
+            "target_level",
+            "weight",
+        ]
+        read_only_fields = fields
+
+
+class VacancySerializer(serializers.ModelSerializer):
+    """Expose vacancy information and its skill requirements."""
+
+    company = serializers.CharField(
+        source="employer.company_name",
+        read_only=True,
+    )
+
+    skill_requirements = VacancySkillSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    class Meta:
+        model = Vacancy
+        fields = [
+            "id",
+            "title",
+            "company",
+            "description",
+            "industry",
+            "location",
+            "employment_type",
+            "work_mode",
+            "status",
+            "education_level",
+            "minimum_experience_years",
+            "posted_at",
+            "closing_date",
+            "created_at",
+            "skill_requirements",
+        ]
+        read_only_fields = fields
+        
 class StudentDocumentSerializer(serializers.ModelSerializer):
     """Serialize document metadata without exposing private storage paths."""
 

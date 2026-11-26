@@ -298,3 +298,25 @@ export function getStudentDashboard(
     },
   });
 }
+
+export interface StudentSkill {
+  id: number;
+  skill: number;
+  skill_name: string;
+skill_category: string;
+  level: number | null;
+  verified: boolean;
+  source: string;
+  evidence_description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getStudentSkills(accessToken: string): Promise<StudentSkill[]> {
+  return request<StudentSkill[]>("student/skills/", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
